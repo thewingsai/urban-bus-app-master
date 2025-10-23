@@ -5,6 +5,9 @@ on:
   push:
     branches: [ "backup-server" ]
 
+permissions:
+  contents: write
+
 jobs:
   backup:
     runs-on: ubuntu-latest
@@ -41,6 +44,24 @@ jobs:
         run: |
           $SCP_CMD "$SSH_USERNAME@$SSH_HOST:$REMOTE_TAR" ./server_backup.tar.gz
           ls -lh ./server_backup.tar.gz
+
+      - name: Extract backup into repo for diff
+        shell: bash
+        run: |
+          mkdir -p server_snapshot/urbanbus
+          tar -xzf ./server_backup.tar.gz -C server_snapshot/urbanbus
+          ls -la server_snapshot/urbanbus | head -n 50
+
+      - name: Commit and push snapshot to new branch
+        shell: bash
+        run: |
+          SNAP_BRANCH="server-snapshot-${GITHUB_RUN_ID}"
+          git config user.name "github-actions"
+          git config user.email "github-actions@users.noreply.github.com"
+          git checkout -b "$SNAP_BRANCH"
+          git add server_snapshot server_configs || true
+          git commit -m "chore(snapshot): add server backup and configs for run ${GITHUB_RUN_ID}"
+          git push -u origin "$SNAP_BRANCH"
 
       - name: Try to capture web server vhost configs
         shell: bash
