@@ -81,6 +81,73 @@ jobs:
         run: |
           printf "%s" "${{ secrets.ENV_PRODUCTION }}" | $SSH_CMD "$SSH_USERNAME@$SSH_HOST" "cat > '$DEPLOY_PATH/.env'"
 
+      - name: Configure virtual host for urbanbus.co.in -> ${{ env.DEPLOY_PATH }}
+        shell: bash
+        env:
+          DOMAIN: urbanbus.co.in
+        run: |
+          set -e
+          REMOTE_CMDS='set -e; DOMAIN="'"$DOMAIN"'"; DEPLOY_PATH="'"$DEPLOY_PATH"'";
+            echo "Configuring vhost for $DOMAIN to $DEPLOY_PATH";
+            if command -v nginx >/dev/null 2>&1 && [ -d /etc/nginx ]; then
+              # Try to find existing server block
+              VHOST_FILE=$(grep -RIl "server_name[[:space:]]\+\(www\.\)\?$DOMAIN\b" /etc/nginx 2>/dev/null | head -n1 || true);
+              if [ -n "$VHOST_FILE" ]; then
+                cp -a "$VHOST_FILE" "${VHOST_FILE}.bak_$(date +%s)" || true;
+                # Update root directive (first occurrence) to DEPLOY_PATH
+                if grep -q "^[[:space:]]*root[[:space:]]" "$VHOST_FILE"; then
+                  sed -i "0,/^[[:space:]]*root[[:space:]]/s##  root $DEPLOY_PATH;#" "$VHOST_FILE" || true;
+                else
+                  # Insert root under server { if not present
+                  awk -v path="$DEPLOY_PATH" 'BEGIN{p=0} {print} /server[[:space:]]*\{/ && p==0 {print "    root " path ";"; p=1}' "$VHOST_FILE" > "$VHOST_FILE.tmp" && mv "$VHOST_FILE.tmp" "$VHOST_FILE" || true;
+                fi;
+              else
+                # Create a minimal server block
+                VHOST_FILE=/etc/nginx/sites-available/$DOMAIN.conf;
+                cat > "$VHOST_FILE" <<CONF
+server {
+    listen 80;
+    server_name $DOMAIN www.$DOMAIN;
+    root $DEPLOY_PATH;
+    index index.html index.htm;
+    location / {
+        try_files $uri $uri/ /index.html;
+    }
+    access_log /var/log/nginx/${DOMAIN}.access.log;
+    error_log  /var/log/nginx/${DOMAIN}.error.log;
+}
+CONF
+                ln -sf "$VHOST_FILE" /etc/nginx/sites-enabled/ || true;
+                [ -f /etc/nginx/sites-enabled/default ] && rm -f /etc/nginx/sites-enabled/default || true;
+              fi;
+              nginx -t;
+              if command -v systemctl >/dev/null 2>&1; then systemctl reload nginx; else service nginx reload || true; fi;
+            fi;
+
+            if command -v apache2ctl >/dev/null 2>&1 && [ -d /etc/apache2 ]; then
+              APACHE_VHOST=$(grep -RIl "ServerName[[:space:]]\+$DOMAIN\b" /etc/apache2 2>/dev/null | head -n1 || true);
+              if [ -z "$APACHE_VHOST" ]; then APACHE_VHOST=/etc/apache2/sites-available/$DOMAIN.conf; fi;
+              cp -a "$APACHE_VHOST" "${APACHE_VHOST}.bak_$(date +%s)" 2>/dev/null || true;
+              cat > "$APACHE_VHOST" <<CONF
+<VirtualHost *:80>
+    ServerName $DOMAIN
+    ServerAlias www.$DOMAIN
+    DocumentRoot $DEPLOY_PATH
+    <Directory $DEPLOY_PATH>
+        AllowOverride All
+        Require all granted
+    </Directory>
+    ErrorLog \/var\/log\/apache2\/${DOMAIN}_error.log
+    CustomLog \/var\/log\/apache2\/${DOMAIN}_access.log combined
+</VirtualHost>
+CONF
+              a2enmod rewrite >/dev/null 2>&1 || true;
+              a2ensite $(basename "$APACHE_VHOST") >/dev/null 2>&1 || true;
+              a2dissite 000-default >/dev/null 2>&1 || true;
+              if command -v systemctl >/dev/null 2>&1; then systemctl reload apache2; else service apache2 reload || true; fi;
+            fi;'
+          $SSH_CMD "$SSH_USERNAME@$SSH_HOST" "$REMOTE_CMDS"
+
       - name: Verify deployment contents on server
         shell: bash
         run: |
