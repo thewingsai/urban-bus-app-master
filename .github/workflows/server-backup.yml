@@ -1,0 +1,72 @@
+name: Backup server files
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ "backup-server" ]
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    env:
+      SSH_HOST: ${{ secrets.SSH_HOST }}
+      SSH_PORT: ${{ secrets.SSH_PORT }}
+      SSH_USERNAME: ${{ secrets.SSH_USERNAME }}
+      SSH_PASSWORD: ${{ secrets.SSH_PASSWORD }}
+      DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Prepare SSH tools
+        shell: bash
+        run: |
+          sudo apt-get update -y
+          sudo apt-get install -y sshpass
+          mkdir -p ~/.ssh
+          SSH_PORT_SAFE=${SSH_PORT:-22}
+          ssh-keyscan -p "$SSH_PORT_SAFE" "$SSH_HOST" >> ~/.ssh/known_hosts
+          echo "SSH_CMD=sshpass -p '$SSH_PASSWORD' ssh -p $SSH_PORT_SAFE -o StrictHostKeyChecking=yes" >> $GITHUB_ENV
+          echo "SCP_CMD=sshpass -p '$SSH_PASSWORD' scp -P $SSH_PORT_SAFE -o StrictHostKeyChecking=yes" >> $GITHUB_ENV
+
+      - name: Create remote tarball of deploy directory
+        shell: bash
+        run: |
+          REMOTE_TAR="/tmp/urbanbus_backup_${GITHUB_RUN_ID}.tar.gz"
+          $SSH_CMD "$SSH_USERNAME@$SSH_HOST" "set -e; mkdir -p /tmp; tar -C '$DEPLOY_PATH' -czf '$REMOTE_TAR' .; ls -lh '$REMOTE_TAR'"
+          echo "REMOTE_TAR=$REMOTE_TAR" >> $GITHUB_ENV
+
+      - name: Download tarball to runner
+        shell: bash
+        run: |
+          $SCP_CMD "$SSH_USERNAME@$SSH_HOST:$REMOTE_TAR" ./server_backup.tar.gz
+          ls -lh ./server_backup.tar.gz
+
+      - name: Try to capture web server vhost configs
+        shell: bash
+        continue-on-error: true
+        run: |
+          $SSH_CMD "$SSH_USERNAME@$SSH_HOST" "set -e; mkdir -p /tmp/urbanbus_conf_${GITHUB_RUN_ID}; \
+            if [ -d /etc/nginx ]; then \
+              grep -RIl 'urbanbus.co.in' /etc/nginx 2>/dev/null | xargs -r tar -czf /tmp/urbanbus_conf_${GITHUB_RUN_ID}/nginx_conf.tar.gz --files-from -; \
+            fi; \
+            if [ -d /etc/apache2 ]; then \
+              grep -RIl 'urbanbus.co.in' /etc/apache2 2>/dev/null | xargs -r tar -czf /tmp/urbanbus_conf_${GITHUB_RUN_ID}/apache_conf.tar.gz --files-from -; \
+            fi; \
+            ls -la /tmp/urbanbus_conf_${GITHUB_RUN_ID} || true"
+          $SCP_CMD -r "$SSH_USERNAME@$SSH_HOST:/tmp/urbanbus_conf_${GITHUB_RUN_ID}" ./server_configs || true
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: server-backup-${{ github.run_id }}
+          path: |
+            server_backup.tar.gz
+            server_configs/**
+          if-no-files-found: warn
+
+      - name: Cleanup remote temp files
+        shell: bash
+        continue-on-error: true
+        run: |
+          $SSH_CMD "$SSH_USERNAME@$SSH_HOST" "rm -f '$REMOTE_TAR' ; rm -rf /tmp/urbanbus_conf_${GITHUB_RUN_ID} || true"
