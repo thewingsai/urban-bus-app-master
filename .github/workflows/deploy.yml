@@ -12,6 +12,7 @@ jobs:
       SSH_HOST: ${{ secrets.SSH_HOST }}
       SSH_PORT: ${{ secrets.SSH_PORT }}
       SSH_USERNAME: ${{ secrets.SSH_USERNAME }}
+      SSH_PASSWORD: ${{ secrets.SSH_PASSWORD }}
       DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
     steps:
       - name: Checkout
@@ -29,49 +30,53 @@ jobs:
       - name: Build
         run: npm run build
 
-      - name: Prepare SSH key
+      - name: Setup SSH access (key or password)
         shell: bash
         run: |
           mkdir -p ~/.ssh
-          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
-          chmod 600 ~/.ssh/id_rsa
           SSH_PORT_SAFE=${SSH_PORT:-22}
           ssh-keyscan -p "$SSH_PORT_SAFE" "$SSH_HOST" >> ~/.ssh/known_hosts
+          if [ -n "${{ secrets.SSH_PRIVATE_KEY }}" ]; then
+            echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+            chmod 600 ~/.ssh/id_rsa
+            echo "SSH_CMD=ssh -i ~/.ssh/id_rsa -p $SSH_PORT_SAFE -o StrictHostKeyChecking=yes" >> $GITHUB_ENV
+            echo "RSYNC_SSH=ssh -i ~/.ssh/id_rsa -p $SSH_PORT_SAFE -o StrictHostKeyChecking=yes" >> $GITHUB_ENV
+          else
+            sudo apt-get update -y
+            sudo apt-get install -y sshpass
+            echo "SSH_CMD=sshpass -p '$SSH_PASSWORD' ssh -p $SSH_PORT_SAFE -o StrictHostKeyChecking=yes" >> $GITHUB_ENV
+            echo "RSYNC_SSH=sshpass -p '$SSH_PASSWORD' ssh -p $SSH_PORT_SAFE -o StrictHostKeyChecking=yes" >> $GITHUB_ENV
+          fi
 
       - name: Ensure remote deploy path exists
         if: env.DEPLOY_PATH != ''
         shell: bash
         run: |
-          SSH_PORT_SAFE=${SSH_PORT:-22}
-          ssh -i ~/.ssh/id_rsa -p "$SSH_PORT_SAFE" "$SSH_USERNAME@$SSH_HOST" "mkdir -p '$DEPLOY_PATH' '$DEPLOY_PATH/api'"
+          $SSH_CMD "$SSH_USERNAME@$SSH_HOST" "mkdir -p '$DEPLOY_PATH' '$DEPLOY_PATH/api'"
 
       - name: Deploy frontend (dist) via rsync
         shell: bash
         run: |
-          SSH_PORT_SAFE=${SSH_PORT:-22}
-          rsync -az --delete -e "ssh -i ~/.ssh/id_rsa -p $SSH_PORT_SAFE -o StrictHostKeyChecking=yes" dist/ "$SSH_USERNAME@$SSH_HOST:$DEPLOY_PATH/"
+          rsync -az --delete -e "$RSYNC_SSH" dist/ "$SSH_USERNAME@$SSH_HOST:$DEPLOY_PATH/"
 
       - name: Deploy API folder if present
         shell: bash
         run: |
           if [ -d api ]; then
-            SSH_PORT_SAFE=${SSH_PORT:-22}
-            rsync -az -e "ssh -i ~/.ssh/id_rsa -p $SSH_PORT_SAFE -o StrictHostKeyChecking=yes" api/ "$SSH_USERNAME@$SSH_HOST:$DEPLOY_PATH/api/"
+            rsync -az -e "$RSYNC_SSH" api/ "$SSH_USERNAME@$SSH_HOST:$DEPLOY_PATH/api/"
           fi
 
       - name: Deploy root PHP utilities if present
         shell: bash
         run: |
-          SSH_PORT_SAFE=${SSH_PORT:-22}
           shopt -s nullglob
           PHP_FILES=( *.php )
           if [ ${#PHP_FILES[@]} -gt 0 ]; then
-            rsync -az -e "ssh -i ~/.ssh/id_rsa -p $SSH_PORT_SAFE -o StrictHostKeyChecking=yes" "${PHP_FILES[@]}" "$SSH_USERNAME@$SSH_HOST:$DEPLOY_PATH/"
+            rsync -az -e "$RSYNC_SSH" "${PHP_FILES[@]}" "$SSH_USERNAME@$SSH_HOST:$DEPLOY_PATH/"
           fi
 
       - name: Upload .env to server (optional)
         if: ${{ secrets.ENV_PRODUCTION != '' }}
         shell: bash
         run: |
-          SSH_PORT_SAFE=${SSH_PORT:-22}
-          printf "%s" "${{ secrets.ENV_PRODUCTION }}" | ssh -i ~/.ssh/id_rsa -p "$SSH_PORT_SAFE" "$SSH_USERNAME@$SSH_HOST" "cat > '$DEPLOY_PATH/.env'"
+          printf "%s" "${{ secrets.ENV_PRODUCTION }}" | $SSH_CMD "$SSH_USERNAME@$SSH_HOST" "cat > '$DEPLOY_PATH/.env'"
