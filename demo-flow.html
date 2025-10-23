@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UrbanBus Payment Flow Demo</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; background: #f5f5f5; }
+        .container { max-width: 800px; margin: 0 auto; }
+        .step { background: white; margin: 20px 0; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .step.active { border-left: 4px solid #3b82f6; background: #f0f9ff; }
+        .step-number { background: #3b82f6; color: white; width: 30px; height: 30px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; margin-right: 10px; }
+        .step.active .step-number { background: #059669; }
+        .button { background: #3b82f6; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; margin: 10px 5px 0 0; }
+        .button:hover { background: #2563eb; }
+        .code-block { background: #f3f4f6; padding: 15px; border-radius: 5px; font-family: monospace; margin: 10px 0; overflow-x: auto; }
+        .api-request { background: #ecfdf5; border-left: 4px solid #10b981; }
+        .api-response { background: #fef2f2; border-left: 4px solid #ef4444; }
+        .flow-diagram { background: white; padding: 20px; margin: 20px 0; border-radius: 8px; text-align: center; }
+        .arrow { font-size: 24px; color: #3b82f6; margin: 10px 0; }
+        h1 { color: #1f2937; text-align: center; }
+        h2 { color: #374151; }
+        .highlight { background: yellow; padding: 2px 4px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚌 UrbanBus Payment System Flow</h1>
+        <p style="text-align: center; color: #6b7280;">Complete demonstration of the bus booking and payment process</p>
+
+        <div class="flow-diagram">
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap;">
+                <div style="background: #dbeafe; padding: 15px; border-radius: 8px; margin: 5px;">
+                    <strong>1. Search Buses</strong><br>
+                    <small>HomePage.tsx</small>
+                </div>
+                <div class="arrow">→</div>
+                <div style="background: #dcfce7; padding: 15px; border-radius: 8px; margin: 5px;">
+                    <strong>2. Select Seats</strong><br>
+                    <small>SeatSelection.tsx</small>
+                </div>
+                <div class="arrow">→</div>
+                <div style="background: #fef3c7; padding: 15px; border-radius: 8px; margin: 5px;">
+                    <strong>3. UPI Payment</strong><br>
+                    <small>PHP API</small>
+                </div>
+                <div class="arrow">→</div>
+                <div style="background: #e0e7ff; padding: 15px; border-radius: 8px; margin: 5px;">
+                    <strong>4. Confirmation</strong><br>
+                    <small>BookingConfirmation.tsx</small>
+                </div>
+            </div>
+        </div>
+
+        <div class="step active" id="step1">
+            <span class="step-number">1</span>
+            <h2>User Searches for Buses (HomePage.tsx)</h2>
+            <p>User selects origin, destination, and travel date. The system shows available routes.</p>
+            <div class="code-block">
+const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!from || !to || !date) return;
+    if (from === to) return; // prevent same origin/destination
+    onSearch({ from, to, date });
+};
+            </div>
+            <button class="button" onclick="nextStep(2)">Search Buses</button>
+        </div>
+
+        <div class="step" id="step2">
+            <span class="step-number">2</span>
+            <h2>Bus Listing & Seat Selection</h2>
+            <p>System queries Supabase database for available buses and shows seat layout.</p>
+            <div class="code-block api-request">
+// Database Query via busService.ts
+const { data, error } = await supabase
+    .from('bus_schedules')
+    .select(`
+        id, departure_time, arrival_time, base_price,
+        buses (id, bus_type, total_seats, amenities,
+            bus_operators (name, rating)
+        )
+    `)
+    .eq('routes.origin', from)
+    .eq('routes.destination', to);
+            </div>
+            <button class="button" onclick="nextStep(3)">Select Seats & Proceed to Payment</button>
+        </div>
+
+        <div class="step" id="step3">
+            <span class="step-number">3</span>
+            <h2>Payment Processing (The Heart of the System)</h2>
+            <p>This is where the magic happens - multiple payment flows with fallbacks!</p>
+            
+            <h3>Step 3A: Create Payment Order</h3>
+            <div class="code-block api-request">
+// Frontend calls: /api/create-payment.php
+POST /api/create-payment.php
+{
+    "bookingId": "BK1729267206123",
+    "amount": 1240,
+    "customerName": "John Doe",
+    "customerEmail": "john@example.com",
+    "customerMobile": "+919876543210"
+}
+            </div>
+
+            <div class="code-block api-response">
+// PHP API Response (Success)
+{
+    "success": true,
+    "orderId": "order_xyz123",
+    "paymentUrl": "https://merchant.upigateway.com/gateway/pay/xyz123",
+    "upiIntent": "upi://pay?pa=merchant@upi&pn=UrbanBus&am=1240",
+    "sessionId": "session_abc456",
+    "isUtrRequired": false
+}
+            </div>
+
+            <h3>Step 3B: Multiple Payment Options</h3>
+            <div style="background: #f8fafc; padding: 15px; border-radius: 8px; margin: 10px 0;">
+                <strong>Option 1: EKQR SDK Payment (Preferred)</strong>
+                <div class="code-block">
+// SeatSelection.tsx loads SDK dynamically
+const paymentSDK = new EKQR({
+    sessionId: paymentResult.sessionId,
+    callbacks: {
+        onSuccess: (response) => {
+            // Payment successful - redirect to confirmation
+            window.location.href = `/?payment=success&client_txn_id=${bookingId}`;
+        },
+        onError: (response) => {
+            // Show UTR fallback option
+            setShowUPIPayment(true);
+        }
+    }
+});
+                </div>
+                
+                <strong>Option 2: Direct UPI Intent/URL</strong>
+                <div class="code-block">
+// If SDK fails, redirect to payment URL
+if (paymentResult.paymentUrl) {
+    window.location.href = paymentResult.paymentUrl;
+}
+                </div>
+
+                <strong>Option 3: Manual UTR Entry (Fallback)</strong>
+                <div class="code-block">
+// UPIPayment.tsx component shows QR + UTR form
+&lt;input 
+    type="text" 
+    placeholder="Enter 12-digit UTR number"
+    value={utr}
+    onChange={(e) => setUtr(e.target.value)}
+/&gt;
+                </div>
+            </div>
+
+            <button class="button" onclick="nextStep(4)">Payment Successful</button>
+            <button class="button" style="background: #ef4444;" onclick="showUTRFlow()">Payment Failed (Show UTR Flow)</button>
+        </div>
+
+        <div class="step" id="step4">
+            <span class="step-number">4</span>
+            <h2>Payment Status Checking</h2>
+            <p>System continuously polls payment status for confirmation</p>
+            <div class="code-block api-request">
+// Automatic polling via checkPaymentStatus()
+POST /api/check-payment.php
+{
+    "clientTxnId": "BK1729267206123",
+    "txnDate": "18-10-2024"
+}
+            </div>
+
+            <div class="code-block api-response">
+// Response when payment is successful
+{
+    "success": true,
+    "status": "success",
+    "data": {
+        "id": "txn_123456",
+        "upi_txn_id": "127788767897",
+        "amount": 1240,
+        "status": "success"
+    }
+}
+            </div>
+            <button class="button" onclick="nextStep(5)">Booking Confirmed</button>
+        </div>
+
+        <div class="step" id="step5">
+            <span class="step-number">5</span>
+            <h2>Booking Confirmation & Ticket Generation</h2>
+            <p>Final step - show booking details and generate PDF ticket</p>
+            <div class="code-block">
+// BookingConfirmation.tsx generates PDF
+const generatePDF = () => {
+    const doc = new jsPDF();
+    doc.text('UrbanBus Ticket', 20, 20);
+    doc.text(`Booking ID: ${booking.bookingReference}`, 20, 40);
+    doc.text(`Route: ${booking.busDetails.operatorName}`, 20, 60);
+    // ... add more ticket details
+    doc.save(`ticket-${booking.bookingReference}.pdf`);
+};
+            </div>
+            <button class="button" onclick="resetDemo()">Start Over</button>
+        </div>
+
+        <!-- UTR Flow (Hidden initially) -->
+        <div class="step" id="utr-flow" style="display: none; border-left: 4px solid #f59e0b;">
+            <span class="step-number" style="background: #f59e0b;">!</span>
+            <h2>Manual UTR Verification Flow</h2>
+            <p>When automatic payment fails, users can manually verify payment using UTR.</p>
+            
+            <div class="code-block api-request">
+// User submits UTR via /api/submit-utr.php
+POST /api/submit-utr.php
+{
+    "bookingId": "BK1729267206123",
+    "utr": "127788767897",
+    "amount": 1240,
+    "customerName": "John Doe",
+    "customerEmail": "john@example.com",
+    "customerMobile": "+919876543210",
+    "proofUrl": "https://example.com/payment-proof.jpg"
+}
+            </div>
+
+            <div style="background: #fef3c7; padding: 15px; border-radius: 8px; margin: 10px 0;">
+                <strong>Admin Operations:</strong>
+                <ul>
+                    <li>View pending UTR submissions in admin panel</li>
+                    <li>Verify payment manually</li>
+                    <li>Update status: verified/rejected</li>
+                    <li>Bulk reconciliation available</li>
+                </ul>
+            </div>
+
+            <button class="button" onclick="nextStep(5)">UTR Verified - Continue to Confirmation</button>
+        </div>
+
+        <div style="background: white; padding: 20px; margin: 20px 0; border-radius: 8px;">
+            <h2>🔧 Technical Architecture Highlights</h2>
+            <ul>
+                <li><strong>Frontend:</strong> React + TypeScript with view-based routing</li>
+                <li><strong>Database:</strong> Supabase with RLS and real-time subscriptions</li>
+                <li><strong>Payment:</strong> UPI Gateway with multiple fallback strategies</li>
+                <li><strong>API:</strong> PHP endpoints handling payment lifecycle</li>
+                <li><strong>Deployment:</strong> Nginx + PHP-FPM with automated deployment script</li>
+                <li><strong>Testing:</strong> Comprehensive Postman collection with auto-generated test data</li>
+            </ul>
+        </div>
+
+        <div style="background: #ecfdf5; padding: 20px; margin: 20px 0; border-radius: 8px;">
+            <h2>🚀 Key Features</h2>
+            <ul>
+                <li><span class="highlight">Dual Payment Mode:</span> Automatic UPI + Manual UTR verification</li>
+                <li><span class="highlight">Real-time Polling:</span> Payment status checking with 90-second timeout</li>
+                <li><span class="highlight">Admin Dashboard:</span> UTR management and bulk reconciliation</li>
+                <li><span class="highlight">PDF Generation:</span> Automatic ticket creation with QR codes</li>
+                <li><span class="highlight">Responsive Design:</span> Works on desktop and mobile</li>
+                <li><span class="highlight">Error Handling:</span> Graceful degradation with multiple fallback options</li>
+            </ul>
+        </div>
+
+    </div>
+
+    <script>
+        let currentStep = 1;
+        
+        function nextStep(step) {
+            // Remove active class from current step
+            document.getElementById(`step${currentStep}`).classList.remove('active');
+            
+            // Add active class to new step
+            currentStep = step;
+            document.getElementById(`step${currentStep}`).classList.add('active');
+            
+            // Scroll to active step
+            document.getElementById(`step${currentStep}`).scrollIntoView({ behavior: 'smooth' });
+        }
+        
+        function showUTRFlow() {
+            document.getElementById('step3').classList.remove('active');
+            document.getElementById('utr-flow').style.display = 'block';
+            document.getElementById('utr-flow').classList.add('active');
+            document.getElementById('utr-flow').scrollIntoView({ behavior: 'smooth' });
+        }
+        
+        function resetDemo() {
+            // Reset all steps
+            for (let i = 1; i <= 5; i++) {
+                document.getElementById(`step${i}`).classList.remove('active');
+            }
+            document.getElementById('utr-flow').style.display = 'none';
+            document.getElementById('utr-flow').classList.remove('active');
+            
+            // Start from step 1
+            currentStep = 1;
+            document.getElementById('step1').classList.add('active');
+            document.getElementById('step1').scrollIntoView({ behavior: 'smooth' });
+        }
+    </script>
+</body>
+</html>
