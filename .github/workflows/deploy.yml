@@ -80,3 +80,13 @@ jobs:
         shell: bash
         run: |
           printf "%s" "${{ secrets.ENV_PRODUCTION }}" | $SSH_CMD "$SSH_USERNAME@$SSH_HOST" "cat > '$DEPLOY_PATH/.env'"
+
+      - name: Verify deployment contents on server
+        shell: bash
+        run: |
+          $SSH_CMD "$SSH_USERNAME@$SSH_HOST" "set -e; echo 'Listing $DEPLOY_PATH:'; ls -la '$DEPLOY_PATH' | tail -n 50; echo 'Disk usage:'; du -sh '$DEPLOY_PATH' || true"
+
+      - name: Try to reload web server (best effort)
+        shell: bash
+        run: |
+          $SSH_CMD "$SSH_USERNAME@$SSH_HOST" "set -e; if command -v systemctl >/dev/null 2>&1; then sudo systemctl reload nginx 2>/dev/null || sudo systemctl reload apache2 2>/dev/null || true; else sudo service nginx reload 2>/dev/null || sudo service apache2 reload 2>/dev/null || true; fi"
