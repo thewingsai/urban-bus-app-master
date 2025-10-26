@@ -2,10 +2,33 @@
 // Lightweight Supabase REST client for PHP (server-side only)
 // Requires env vars: SUPABASE_URL, SUPABASE_SERVICE_ROLE
 
+// Basic .env loader (KEY=VALUE per line) from project root if present
+(function(){
+  static $loaded = false; if ($loaded) return; $loaded = true;
+  $root = realpath(__DIR__ . '/..');
+  $envFile = $root . DIRECTORY_SEPARATOR . '.env';
+  if (is_readable($envFile)) {
+    $lines = file($envFile, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+    foreach ($lines as $line) {
+      if (strlen($line) === 0 || $line[0] === '#' ) continue;
+      $pos = strpos($line, '=');
+      if ($pos === false) continue;
+      $k = trim(substr($line, 0, $pos));
+      $v = trim(substr($line, $pos + 1));
+      // Strip optional surrounding quotes
+      if ((str_starts_with($v, '"') && str_ends_with($v, '"')) || (str_starts_with($v, "'") && str_ends_with($v, "'"))) {
+        $v = substr($v, 1, -1);
+      }
+      if ($k !== '') { putenv($k . '=' . $v); $_ENV[$k] = $v; $_SERVER[$k] = $v; }
+    }
+  }
+})();
+
 function supabase_env(string $key): string {
   $val = getenv($key);
   if ($val === false || $val === '') {
     http_response_code(500);
+    header('Content-Type: application/json');
     echo json_encode([ 'success' => false, 'error' => "Missing env var: $key" ]);
     exit;
   }

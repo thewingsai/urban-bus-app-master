@@ -54,16 +54,38 @@ jobs:
         run: |
           $SSH_CMD "$SSH_USERNAME@$SSH_HOST" "mkdir -p '$DEPLOY_PATH' '$DEPLOY_PATH/api'"
 
-      - name: Deploy frontend (dist) via rsync
+      - name: Deploy frontend (prefer dist; fallback to prebuilt tar)
         shell: bash
         run: |
-          rsync -az --delete -e "$RSYNC_SSH" dist/ "$SSH_USERNAME@$SSH_HOST:$DEPLOY_PATH/"
+          set -e
+          if [ -d dist ]; then
+            echo "Deploying dist/ via rsync"
+            rsync -az --delete -e "$RSYNC_SSH" dist/ "$SSH_USERNAME@$SSH_HOST:$DEPLOY_PATH/"
+          elif [ -f manual-deployment-package/urbanbus-enhanced.tar.gz ]; then
+            echo "No dist/ found. Uploading prebuilt manual-deployment-package/urbanbus-enhanced.tar.gz and extracting on server"
+            rsync -az -e "$RSYNC_SSH" manual-deployment-package/urbanbus-enhanced.tar.gz "$SSH_USERNAME@$SSH_HOST:$DEPLOY_PATH/"
+            $SSH_CMD "$SSH_USERNAME@$SSH_HOST" "set -e; cd '$DEPLOY_PATH'; tar -xzf urbanbus-enhanced.tar.gz; rm -f urbanbus-enhanced.tar.gz; ls -la '$DEPLOY_PATH' | head -n 20"
+          else
+            echo "Neither dist/ nor prebuilt package found. Skipping frontend deploy.";
+          fi
 
       - name: Deploy API folder if present
         shell: bash
         run: |
           if [ -d api ]; then
+            echo "Deploying PHP API"
             rsync -az -e "$RSYNC_SSH" api/ "$SSH_USERNAME@$SSH_HOST:$DEPLOY_PATH/api/"
+          fi
+      
+      - name: Deploy admin UI (admin.html/js)
+        shell: bash
+        run: |
+          set -e
+          if [ -f manual-deployment-package/admin.html ]; then
+            rsync -az -e "$RSYNC_SSH" manual-deployment-package/admin.html "$SSH_USERNAME@$SSH_HOST:$DEPLOY_PATH/"
+          fi
+          if [ -f manual-deployment-package/admin.js ]; then
+            rsync -az -e "$RSYNC_SSH" manual-deployment-package/admin.js "$SSH_USERNAME@$SSH_HOST:$DEPLOY_PATH/"
           fi
 
       - name: Deploy root PHP utilities if present

@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 140" width="600" height="140" role="img" aria-label="UrbanBus logo">
+  <style>
+    .text { font: 800 88px/1.1 Inter, system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+  </style>
+  <rect width="100%" height="100%" fill="none"/>
+  <text class="text" x="16" y="100">
+    <tspan fill="#111827">Urban</tspan><tspan fill="#4F46E5">Bus</tspan>
+  </text>
+</svg>

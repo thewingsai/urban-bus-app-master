@@ -4,7 +4,8 @@
 // Body (JSON): {
 //   booking_reference, schedule_id, travel_date (YYYY-MM-DD), seat_numbers [..], total_amount,
 //   passenger_name, passenger_email, passenger_phone, passenger_age?, passenger_gender?,
-//   user_id?, payment_method, transaction_id?, payment_status? (default success)
+//   user_id?, payment_method, transaction_id?, payment_status? (default success),
+//   applied_price?, pricing_mode? (optional; server will fetch if missing)
 // }
 
 require_once __DIR__ . '/supabase_client.php';
@@ -32,6 +33,25 @@ $bookingRef = $in['booking_reference'] ?? ('BK' . time() . random_int(100, 999))
 $seatNumbers = is_array($in['seat_numbers']) ? $in['seat_numbers'] : [];
 $paymentStatus = $in['payment_status'] ?? 'success';
 
+// Determine applied price + pricing mode (admin/dynamic)
+$appliedPrice = isset($in['applied_price']) ? (float)$in['applied_price'] : null;
+$pricingMode = isset($in['pricing_mode']) ? (string)$in['pricing_mode'] : null;
+if ($appliedPrice === null || $appliedPrice <= 0 || $pricingMode === null) {
+  $view = 'search_schedules_effective_priced'; // Use 5h baseline for consistency
+  $q = http_build_query([
+    'id' => 'eq.' . $in['schedule_id'],
+    'select' => 'current_price,pricing_mode'
+  ]);
+  $respPrice = supabase_request('GET', '/' . $view . '?' . $q, null, [ 'Accept-Profile: public', 'Content-Profile: public' ]);
+  if ($respPrice['status'] >= 200 && $respPrice['status'] < 300) {
+    $rows = json_decode($respPrice['body'], true);
+    if (is_array($rows) && count($rows) > 0) {
+      $appliedPrice = (float)($rows[0]['current_price'] ?? 0);
+      $pricingMode = (string)($rows[0]['pricing_mode'] ?? 'dynamic');
+    }
+  }
+}
+
 $booking = [
   'user_id' => $in['user_id'] ?? null,
   'schedule_id' => $in['schedule_id'],
@@ -46,6 +66,8 @@ $booking = [
   'booking_status' => 'confirmed',
   'payment_status' => ($paymentStatus === 'success' ? 'completed' : $paymentStatus),
   'booking_reference' => $bookingRef,
+  'applied_price' => $appliedPrice,
+  'pricing_mode' => $pricingMode ?? 'dynamic',
 ];
 
 $respBooking = supabase_insert('bookings', $booking);
