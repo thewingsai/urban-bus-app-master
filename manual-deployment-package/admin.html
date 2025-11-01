@@ -3,12 +3,16 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
     <title>UrbanBus Admin Pricing</title>
     <style>
       :root { --bg:#0b1020; --card:#121933; --muted:#9aa4c7; --text:#e6ebff; --primary:#3b82f6; }
       * { box-sizing: border-box; font-family: Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji"; }
-      body { background: var(--bg); color: var(--text); margin: 0; padding: 24px; }
-      .container { max-width: 900px; margin: 0 auto; }
+      body { background: var(--bg); color: var(--text); margin: 0; padding: 0; }
+      .topbar { position: sticky; top: 0; z-index: 1000; background: #0b1020cc; backdrop-filter: saturate(180%) blur(6px); border-bottom: 1px solid #253057; }
+      .topbar .inner { max-width: 900px; margin: 0 auto; padding: 8px 12px; display:flex; align-items:center; gap:12px; }
+      .topbar img { height: 28px; display:block; }
+      .container { max-width: 900px; margin: 0 auto; padding: 24px; }
       .card { background: var(--card); border: 1px solid #253057; border-radius: 12px; padding: 16px; margin-bottom: 16px; }
       h1 { font-size: 20px; margin: 0 0 16px; }
       h2 { font-size: 16px; margin: 0 0 12px; color: var(--muted); }
@@ -25,6 +29,7 @@
     </style>
   </head>
   <body>
+    <div class="topbar"><div class="inner"><a href="./index.html"><img src="./logo-horizontal.svg" alt="UrbanBus"/></a></div></div>
     <div class="container">
       <div class="card">
         <h1>Admin Pricing</h1>

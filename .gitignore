@@ -1,0 +1,19 @@
+# Dependencies
+node_modules/
+
+# Builds
+/dist/
+manual-deployment-package/*.tar.gz
+urbanbus-public.tar.gz
+
+# Env
+.env
+.env.*
+
+# OS/editor
+.DS_Store
+Thumbs.db
+.vscode/
+
+# Logs
+*.log

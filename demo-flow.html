@@ -3,10 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/svg+xml" href="./manual-deployment-package/favicon.svg">
     <title>UrbanBus Payment Flow Demo</title>
     <style>
-        body { font-family: Arial, sans-serif; margin: 20px; background: #f5f5f5; }
-        .container { max-width: 800px; margin: 0 auto; }
+        body { font-family: Arial, sans-serif; margin: 0; background: #f5f5f5; }
+        .topbar { position: sticky; top: 0; z-index: 1000; background: #0b1020cc; backdrop-filter: saturate(180%) blur(6px); border-bottom: 1px solid #d1d5db; }
+        .topbar .inner { max-width: 1000px; margin: 0 auto; padding: 8px 12px; display:flex; align-items:center; gap:12px; }
+        .topbar img { height: 28px; display:block; }
+        .container { max-width: 800px; margin: 0 auto; padding: 20px; }
         .step { background: white; margin: 20px 0; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
         .step.active { border-left: 4px solid #3b82f6; background: #f0f9ff; }
         .step-number { background: #3b82f6; color: white; width: 30px; height: 30px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; margin-right: 10px; }
@@ -24,6 +28,7 @@
     </style>
 </head>
 <body>
+    <div class="topbar"><div class="inner"><a href="./manual-deployment-package/index.html"><img src="./manual-deployment-package/logo-horizontal.svg" alt="UrbanBus"/></a></div></div>
     <div class="container">
         <h1>🚌 UrbanBus Payment System Flow</h1>
         <p style="text-align: center; color: #6b7280;">Complete demonstration of the bus booking and payment process</p>

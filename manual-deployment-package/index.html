@@ -105,8 +105,16 @@
     <link rel="canonical" href="https://urbanbus.co.in/" />
     <script type="module" crossorigin src="/assets/index-C_j9LHEe.js"></script>
     <link rel="stylesheet" crossorigin href="/assets/index-DW07prRz.css">
+    <style>
+      /* Always-visible top logo bar */
+      #ub-global-header { position: sticky; top: 0; z-index: 1000; background: #0b1020cc; backdrop-filter: saturate(180%) blur(6px); border-bottom: 1px solid rgba(255,255,255,0.08); }
+      #ub-global-header .inner { max-width: 1200px; margin: 0 auto; padding: 8px 12px; display: flex; align-items: center; gap: 12px; }
+      #ub-global-header img { height: 28px; display: block; }
+      body { margin: 0; }
+    </style>
   </head>
   <body>
+    <div id="ub-global-header"><div class="inner"><a href="/"><img src="/logo-horizontal.svg" alt="UrbanBus" /></a></div></div>
     <div id="root"></div>
   </body>
 </html>
