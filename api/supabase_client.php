@@ -10,12 +10,10 @@
   if (is_readable($envFile)) {
     $lines = file($envFile, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
     foreach ($lines as $line) {
-      // Strip UTF-8 BOM if present and trim line
-      $line = preg_replace('/^\xEF\xBB\xBF/', '', (string)$line);
-      if ($line === '' || $line[0] === '#') continue;
+      if (strlen($line) === 0 || $line[0] === '#' ) continue;
       $pos = strpos($line, '=');
       if ($pos === false) continue;
-      $k = trim(preg_replace('/^\xEF\xBB\xBF/', '', substr($line, 0, $pos)));
+      $k = trim(substr($line, 0, $pos));
       $v = trim(substr($line, $pos + 1));
       // Strip optional surrounding quotes
       if ((str_starts_with($v, '"') && str_ends_with($v, '"')) || (str_starts_with($v, "'") && str_ends_with($v, "'"))) {
@@ -28,25 +26,7 @@
 
 function supabase_env(string $key): string {
   $val = getenv($key);
-  if ($val === false || $val === '') { $val = $_ENV[$key] ?? $_SERVER[$key] ?? ''; }
-  if ($val === '') {
-    // Fallback: read from .env directly (handles hosts that don't propagate putenv)
-    $root = realpath(__DIR__ . '/..');
-    $envFile = $root . DIRECTORY_SEPARATOR . '.env';
-    if (is_readable($envFile)) {
-      $lines = file($envFile, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
-      foreach ($lines as $line) {
-        $line = preg_replace('/^\xEF\xBB\xBF/', '', (string)$line);
-        if ($line === '' || $line[0] === '#') continue;
-        $pos = strpos($line, '='); if ($pos === false) continue;
-        $k = trim(preg_replace('/^\xEF\xBB\xBF/', '', substr($line, 0, $pos)));
-        $v = trim(substr($line, $pos + 1));
-        if ((str_starts_with($v, '"') && str_ends_with($v, '"')) || (str_starts_with($v, "'") && str_ends_with($v, "'"))) { $v = substr($v, 1, -1); }
-        if ($k !== '') { if (strcasecmp($k, $key) === 0) { $val = $v; break; } }
-      }
-    }
-  }
-  if ($val === '' || $val === false) {
+  if ($val === false || $val === '') {
     http_response_code(500);
     header('Content-Type: application/json');
     echo json_encode([ 'success' => false, 'error' => "Missing env var: $key" ]);

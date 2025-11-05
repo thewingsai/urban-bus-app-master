@@ -1,29 +1,19 @@
 # Dependencies
 node_modules/
-**/node_modules/
 
 # Builds
 /dist/
 manual-deployment-package/*.tar.gz
 urbanbus-public.tar.gz
 
-# Env & secrets
+# Env
 .env
 .env.*
-api/payu_config.php
-
-# Local scripts and archives
-*.tar.gz
-urbanbus.conf
-remote-setup.sh
-cleanup-nginx.sh
 
 # OS/editor
 .DS_Store
 Thumbs.db
 .vscode/
-.idea/
 
 # Logs
 *.log
-logs/

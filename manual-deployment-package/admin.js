@@ -17,19 +17,13 @@
     listTableBody: document.querySelector('#listTable tbody')
   };
 
-  function sanitizeToken(s){
-    try { s = s.normalize('NFKC'); } catch(_){}
-    return (s || '').replace(/[^\x20-\x7E]/g,'').trim(); // printable ASCII only
-  }
   function getToken(){ return localStorage.getItem('admin_token') || ''; }
-  function setToken(val){ localStorage.setItem('admin_token', sanitizeToken(val || '')); }
+  function setToken(val){ localStorage.setItem('admin_token', val || ''); }
   function updateTokenStatus(){ els.tokenStatus.textContent = getToken() ? 'Token saved' : 'Not saved'; }
 
   async function api(method, paramsOrBody){
-    const raw = getToken();
-    const token = sanitizeToken(raw);
-    const headers = { 'Content-Type': 'application/json' };
-    if (token) headers['X-Admin-Token'] = token;
+    const token = getToken();
+    const headers = { 'Content-Type': 'application/json', 'X-Admin-Token': token };
     let url = apiBase;
     let body = null;
     if (method === 'GET'){
@@ -37,10 +31,6 @@
       url += qs ? ('?' + qs) : '';
     } else {
       body = JSON.stringify(paramsOrBody || {});
-    }
-    // Fallback for servers that strip custom headers: also send as query param
-    if (token) {
-      url += (url.includes('?') ? '&' : '?') + 'admin_token=' + encodeURIComponent(token);
     }
     const res = await fetch(url, { method, headers, body });
     const data = await res.json().catch(()=>({}));
@@ -160,15 +150,7 @@
   // Wire events
   els.token.value = getToken();
   updateTokenStatus();
-  els.saveToken.addEventListener('click', ()=>{ 
-    const t = sanitizeToken(els.token.value || '');
-    setToken(t); 
-    // also set a cookie so backend can read if headers are stripped
-    if (t) {
-      document.cookie = 'x_admin_token=' + encodeURIComponent(t) + '; Path=/; Max-Age=' + (30*24*60*60) + '; SameSite=Lax; Secure';
-    }
-    updateTokenStatus(); 
-  });
+  els.saveToken.addEventListener('click', ()=>{ setToken(els.token.value); updateTokenStatus(); });
   els.loadBtn.addEventListener('click', loadPricing);
   els.savePricing.addEventListener('click', savePricing);
   els.listAllBtn.addEventListener('click', listAll);

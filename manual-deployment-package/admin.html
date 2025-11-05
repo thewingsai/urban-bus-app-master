@@ -4,404 +4,108 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
-    <title>UrbanBus Admin Dashboard</title>
-    <link rel="shortcut icon" href="./favicon.svg" type="image/svg+xml" />
+    <title>UrbanBus Admin Pricing</title>
     <style>
-      :root { --bg:#f8fafc; --panel:#ffffff; --muted:#64748b; --text:#0f172a; --primary:#1d4ed8; --border:#e2e8f0; }
+      :root { --bg:#0b1020; --card:#121933; --muted:#9aa4c7; --text:#e6ebff; --primary:#3b82f6; }
       * { box-sizing: border-box; font-family: Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji"; }
-      body { background: var(--bg); color: var(--text); margin: 0; display:flex; min-height:100vh; }
-      .sidebar { width: 260px; background:#0b1020; color:#e5e7eb; border-right:1px solid rgba(255,255,255,0.07); padding:14px; position:sticky; top:0; height:100vh; }
-      .sidebar h1 { font-size:16px; margin:6px 0 12px; color:#fff; }
-      .nav { display:flex; flex-direction:column; gap:8px; }
-      .nav button { text-align:left; background:transparent; color:#e5e7eb; border:1px solid rgba(255,255,255,0.08); padding:10px; border-radius:8px; cursor:pointer; }
-      .nav button.active { background: var(--primary); border-color: var(--primary); color:#fff; }
-      .main { flex:1; padding:20px; }
-      .panel { background: var(--panel); border:1px solid var(--border); border-radius:12px; padding:16px; margin-bottom:16px; }
-      h2 { font-size:18px; margin:0 0 12px; }
-      label { display:block; font-size:12px; color:var(--muted); margin:8px 0 6px; }
-      input, select, textarea { width:100%; padding:10px 12px; background:#ffffff; color:var(--text); border:1px solid var(--border); border-radius:8px; }
-      .row { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
-      .btn { background:var(--primary); color:#fff; border:0; padding:10px 14px; border-radius:8px; cursor:pointer; }
-      .btn.secondary { background:#ffffff; color:var(--text); border:1px solid var(--border); }
-      table { width:100%; border-collapse: collapse; }
-      th, td { text-align:left; padding:8px 6px; border-bottom:1px solid var(--border); font-size:13px; }
-      .muted { color:var(--muted); font-size:12px; }
-      .hidden { display:none; }
-      .sidebar .logo { display:flex; align-items:center; gap:10px; margin-bottom:12px; }
-      .sidebar .logo img { height:22px; display:block; }
+      body { background: var(--bg); color: var(--text); margin: 0; padding: 0; }
+      .topbar { position: sticky; top: 0; z-index: 1000; background: #0b1020cc; backdrop-filter: saturate(180%) blur(6px); border-bottom: 1px solid #253057; }
+      .topbar .inner { max-width: 900px; margin: 0 auto; padding: 8px 12px; display:flex; align-items:center; gap:12px; }
+      .topbar img { height: 28px; display:block; }
+      .container { max-width: 900px; margin: 0 auto; padding: 24px; }
+      .card { background: var(--card); border: 1px solid #253057; border-radius: 12px; padding: 16px; margin-bottom: 16px; }
+      h1 { font-size: 20px; margin: 0 0 16px; }
+      h2 { font-size: 16px; margin: 0 0 12px; color: var(--muted); }
+      label { display: block; font-size: 12px; color: var(--muted); margin: 8px 0 6px; }
+      input, select, textarea { width: 100%; padding: 10px 12px; background: #0e1430; color: var(--text); border: 1px solid #2a3766; border-radius: 8px; outline: none; }
+      .row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+      .btn { background: var(--primary); color: white; border: 0; padding: 10px 14px; border-radius: 8px; cursor: pointer; }
+      .btn.secondary { background: #243152; }
+      .muted { color: var(--muted); font-size: 12px; }
+      table { width: 100%; border-collapse: collapse; }
+      th, td { text-align: left; padding: 8px 6px; border-bottom: 1px solid #253057; font-size: 13px; }
+      .actions { display: flex; gap: 8px; align-items: center; }
+      .pill { display:inline-block; padding:2px 8px; border:1px solid #2a3766; border-radius:999px; font-size:12px; color: var(--muted); }
     </style>
   </head>
   <body>
-    <aside class="sidebar">
-      <div class="logo"><a href="/" target="_blank"><img src="/logo-horizontal.svg" alt="UrbanBus" /></a><h1>Admin</h1></div>
-      <div class="panel">
-        <label>Login</label>
-        <input id="login-username" placeholder="Email" />
-        <input id="login-password" type="password" placeholder="Password" style="margin-top:6px;" />
-        <div style="display:flex; gap:8px; align-items:center; margin-top:8px;">
-          <button class="btn" id="loginBtn">Login</button>
-          <span class="muted" id="loginStatus">Logged out</span>
-        </div>
-        <label style="margin-top:10px;">Admin Token (header/query auth)</label>
-        <div style="display:flex; gap:8px; align-items:center;">
-          <input id="admin-token-input" placeholder="Paste ADMIN_TOKEN here" />
-          <button class="btn secondary" id="saveToken">Save</button>
-        </div>
-      </div>
-      <div class="nav">
-        <button data-view="dashboard" class="active">Dashboard</button>
-        <button data-view="routes">Routes</button>
-        <button data-view="buses">Buses</button>
-        <button data-view="schedules">Schedules</button>
-        <button data-view="operators">Operators</button>
-        <button data-view="bookings">Bookings</button>
-        <button data-view="payments">Payments</button>
-        <button data-view="pricing">Pricing</button>
-        <button data-view="offers">Offers</button>
-        <button data-view="pages">Pages</button>
-        <button data-view="hero">Hero</button>
-        <button data-view="site">Site</button>
-      </div>
-    </aside>
-    <main class="main">
-      <section id="view-dashboard" class="panel">
-        <h2>Dashboard</h2>
-        <div style="display:flex; gap:12px; align-items:center; margin-bottom:8px;">
-          <label class="muted"><input type="checkbox" id="kpi-auto" /> Auto refresh</label>
-          <button class="btn secondary" id="kpi-refresh">Refresh</button>
-        </div>
-        <div class="row">
-          <div class="panel"><label class="muted">Revenue</label><div style="font-size:22px;" id="kpi-revenue">—</div></div>
-          <div class="panel"><label class="muted">Bookings</label><div style="font-size:22px;" id="kpi-bookings">—</div></div>
-        </div>
-        <div class="row" style="margin-top:12px;">
-          <div class="panel"><label class="muted">Routes</label><div style="font-size:22px;" id="kpi-routes">—</div></div>
-          <div class="panel"><label class="muted">Buses</label><div style="font-size:22px;" id="kpi-buses">—</div></div>
-        </div>
-        <div class="row" style="margin-top:12px;">
-          <div class="panel"><label class="muted">Schedules</label><div style="font-size:22px;" id="kpi-schedules">—</div></div>
-          <div class="panel"><label class="muted">Offers</label><div style="font-size:22px;" id="kpi-offers">—</div></div>
-        </div>
-      </section>
-
-      <section id="view-routes" class="panel hidden">
-      </div>
-    </aside>
-    <main class="main">
-      <section id="view-routes" class="panel">
-        <h2>Routes</h2>
-        <div class="row">
-          <div><label>Origin</label><input id="r-origin" placeholder="e.g. Kalpa" /></div>
-          <div><label>Destination</label><input id="r-destination" placeholder="e.g. Delhi" /></div>
-        </div>
-        <div class="row">
-          <div><label>Distance (km)</label><input id="r-distance" type="number" placeholder="0" /></div>
-          <div><label>Duration (hours)</label><input id="r-duration" type="number" placeholder="0" /></div>
-        </div>
-        <div style="margin-top:12px; display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
-          <button class="btn" id="r-create" title="Ctrl+S">Create</button>
-          <button class="btn secondary" id="r-load" title="L">List</button>
-          <label class="muted"><input type="checkbox" id="r-auto" /> Auto refresh</label>
-          <div style="margin-left:auto; display:flex; gap:8px; align-items:center;">
-            <input id="r-filter-origin" placeholder="Filter origin" style="max-width:180px;" />
-            <input id="r-filter-destination" placeholder="Filter destination" style="max-width:200px;" />
-            <select id="r-page-size"><option>20</option><option selected>50</option><option>100</option></select>
-            <button class="btn secondary" id="r-prev">Prev</button>
-            <button class="btn secondary" id="r-next">Next</button>
-            <button class="btn secondary" id="r-filter">Search</button>
-            <button class="btn secondary" id="r-export">Export CSV</button>
-            <label class="muted">Import</label>
-            <input id="r-import-file" type="file" accept=".csv" />
-            <button class="btn secondary" id="r-import">Upload</button>
-          </div>
-          <span class="muted" id="r-msg"></span>
-        </div>
-        <table style="margin-top:12px;" id="r-table"><thead><tr><th>ID</th><th>Origin</th><th>Destination</th><th>Distance</th><th>Duration</th><th></th></tr></thead><tbody></tbody></table>
-      </section>
-
-      <section id="view-buses" class="panel hidden">
-        <h2>Buses</h2>
-        <div class="row">
-          <div><label>Type</label><input id="b-type" placeholder="AC Sleeper" /></div>
-          <div><label>Total Seats</label><input id="b-seats" type="number" placeholder="40" /></div>
-        </div>
-        <label>Amenities (comma separated)</label>
-        <input id="b-amenities" placeholder="WiFi, Water, Blanket" />
-        <div style="margin-top:12px; display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
-          <button class="btn" id="b-create">Create</button>
-          <button class="btn secondary" id="b-load">List</button>
-          <label class="muted"><input type="checkbox" id="b-auto" /> Auto refresh</label>
-          <div style="margin-left:auto; display:flex; gap:8px; align-items:center;">
-            <input id="b-filter-type" placeholder="Filter type" style="max-width:180px;" />
-            <select id="b-page-size"><option>20</option><option selected>50</option><option>100</option></select>
-            <button class="btn secondary" id="b-prev">Prev</button>
-            <button class="btn secondary" id="b-next">Next</button>
-          </div>
-          <span class="muted" id="b-msg"></span>
-        </div>
-        <table style="margin-top:12px;" id="b-table"><thead><tr><th>ID</th><th>Type</th><th>Seats</th><th>Amenities</th><th></th></tr></thead><tbody></tbody></table>
-      </section>
-
-      <section id="view-schedules" class="panel hidden">
-        <h2>Schedules</h2>
+    <div class="topbar"><div class="inner"><a href="./index.html"><img src="./logo-horizontal.svg" alt="UrbanBus"/></a></div></div>
+    <div class="container">
+      <div class="card">
+        <h1>Admin Pricing</h1>
         <div class="row">
           <div>
-            <label>Route (type to search)</label>
-            <input id="s-route-search" list="routes-datalist" placeholder="e.g. Kalpa → Delhi" />
-            <datalist id="routes-datalist"></datalist>
-            <input id="s-route" placeholder="route uuid" style="display:none;" />
+            <label>Admin Token</label>
+            <input id="token" type="password" placeholder="Enter admin token" />
+          </div>
+          <div class="actions" style="align-self:end;">
+            <button class="btn" id="saveToken">Save Token</button>
+            <span class="muted" id="tokenStatus">Not saved</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Find / Create Route</h2>
+        <div class="row">
+          <div>
+            <label>Origin</label>
+            <input id="origin" placeholder="e.g. Kalpa" />
           </div>
           <div>
-            <label>Bus (type to search)</label>
-            <input id="s-bus-search" list="buses-datalist" placeholder="e.g. AC Sleeper (40)" />
-            <datalist id="buses-datalist"></datalist>
-            <input id="s-bus" placeholder="bus uuid" style="display:none;" />
+            <label>Destination</label>
+            <input id="destination" placeholder="e.g. Delhi" />
           </div>
         </div>
-        <div class="row">
-          <div><label>Departure</label><input id="s-dep" type="datetime-local" /></div>
-          <div><label>Arrival</label><input id="s-arr" type="datetime-local" /></div>
-        </div>
-        <div class="row">
-          <div><label>Base Price</label><input id="s-price" type="number" placeholder="1499" /></div>
-          <div><label>Active</label><select id="s-active"><option value="true" selected>Yes</option><option value="false">No</option></select></div>
-        </div>
-        <div style="margin-top:12px; display:flex; gap:8px;">
-          <button class="btn" id="s-create">Create</button>
-          <button class="btn secondary" id="s-load">List</button>
-          <span class="muted" id="s-msg"></span>
-        </div>
-        <table style="margin-top:12px;" id="s-table"><thead><tr><th>ID</th><th>Route</th><th>Bus</th><th>Departure</th><th>Arrival</th><th>Price</th><th>Active</th><th></th></tr></thead><tbody></tbody></table>
-      </section>
-
-      <section id="view-operators" class="panel hidden">
-        <h2>Operators</h2>
-        <div class="row">
-          <div><label>Name</label><input id="op-name" placeholder="Operator name" /></div>
-          <div><label>Email</label><input id="op-email" placeholder="operator@example.com" /></div>
-        </div>
-        <div class="row">
-          <div><label>Phone</label><input id="op-phone" placeholder="9999999999" /></div>
-          <div><label>Logo URL</label><input id="op-logo" placeholder="https://..." /></div>
-        </div>
-        <div style="margin-top:12px; display:flex; gap:8px;">
-          <button class="btn" id="op-create">Create</button>
-          <button class="btn secondary" id="op-load">List</button>
-          <span class="muted" id="op-msg"></span>
-        </div>
-        <table style="margin-top:12px;" id="op-table"><thead><tr><th>ID</th><th>Name</th><th>Email</th><th>Phone</th><th>Rating</th><th>Total Buses</th><th></th></tr></thead><tbody></tbody></table>
-      </section>
-
-      <section id="view-bookings" class="panel hidden">
-        <h2>Bookings</h2>
-        <div class="row">
-          <div><label>Reference</label><input id="bk-ref" placeholder="UB123..." /></div>
-          <div><label>Email</label><input id="bk-email" placeholder="user@example.com" /></div>
-        </div>
-        <div style="margin-top:12px; display:flex; gap:8px;">
-          <button class="btn secondary" id="bk-load">Search</button>
-          <span class="muted" id="bk-msg"></span>
-        </div>
-        <table style="margin-top:12px;" id="bk-table"><thead><tr><th>Ref</th><th>Name</th><th>Email</th><th>Date</th><th>Seats</th><th>Amount</th><th>Status</th><th>Payment</th><th></th></tr></thead><tbody></tbody></table>
-      </section>
-
-      <section id="view-payments" class="panel hidden">
-        <h2>Payments</h2>
-        <div class="row">
-          <div><label>Status</label><input id="pm-status" placeholder="success|pending|failed" /></div>
-          <div><label>Transaction ID</label><input id="pm-tx" placeholder="tx_..." /></div>
-        </div>
-        <div style="margin-top:12px; display:flex; gap:8px;">
-          <button class="btn secondary" id="pm-load">Search</button>
-        </div>
-        <table style="margin-top:12px;" id="pm-table"><thead><tr><th>ID</th><th>Booking</th><th>Amount</th><th>Method</th><th>Tx</th><th>Status</th><th>At</th></tr></thead><tbody></tbody></table>
-      </section>
-
-      <section id="view-operators" class="panel hidden">
-        <h2>Operators</h2>
-        <div class="row">
-          <div><label>Name</label><input id="op-name" placeholder="Operator name" /></div>
-          <div><label>Email</label><input id="op-email" placeholder="operator@example.com" /></div>
-        </div>
-        <div class="row">
-          <div><label>Phone</label><input id="op-phone" placeholder="9999999999" /></div>
-          <div><label>Logo URL</label><input id="op-logo" placeholder="https://..." /></div>
-        </div>
-        <div style="margin-top:12px; display:flex; gap:8px;">
-          <button class="btn" id="op-create">Create</button>
-          <button class="btn secondary" id="op-load">List</button>
-          <span class="muted" id="op-msg"></span>
-        </div>
-        <table style="margin-top:12px;" id="op-table"><thead><tr><th>ID</th><th>Name</th><th>Email</th><th>Phone</th><th>Rating</th><th>Total Buses</th><th></th></tr></thead><tbody></tbody></table>
-      </section>
-
-      <section id="view-bookings" class="panel hidden">
-        <h2>Bookings</h2>
-        <div class="row">
-          <div><label>Reference</label><input id="bk-ref" placeholder="UB123..." /></div>
-          <div><label>Email</label><input id="bk-email" placeholder="user@example.com" /></div>
-        </div>
-        <div style="margin-top:12px; display:flex; gap:8px;">
-          <button class="btn secondary" id="bk-load">Search</button>
-          <span class="muted" id="bk-msg"></span>
-        </div>
-        <table style="margin-top:12px;" id="bk-table"><thead><tr><th>Ref</th><th>Name</th><th>Email</th><th>Date</th><th>Seats</th><th>Amount</th><th>Status</th><th>Payment</th><th></th></tr></thead><tbody></tbody></table>
-      </section>
-
-      <section id="view-payments" class="panel hidden">
-        <h2>Payments</h2>
-        <div class="row">
-          <div><label>Status</label><input id="pm-status" placeholder="success|pending|failed" /></div>
-          <div><label>Transaction ID</label><input id="pm-tx" placeholder="tx_..." /></div>
-        </div>
-        <div style="margin-top:12px; display:flex; gap:8px;">
-          <button class="btn secondary" id="pm-load">Search</button>
-        </div>
-        <table style="margin-top:12px;" id="pm-table"><thead><tr><th>ID</th><th>Booking</th><th>Amount</th><th>Method</th><th>Tx</th><th>Status</th><th>At</th></tr></thead><tbody></tbody></table>
-      </section>
-
-      <section id="view-pricing" class="panel hidden">
-        <h2>Pricing Overrides</h2>
-        <div class="row">
-          <div><label>Origin</label><input id="origin" placeholder="e.g. Kalpa" /></div>
-          <div><label>Destination</label><input id="destination" placeholder="e.g. Delhi" /></div>
-        </div>
-        <div class="row">
-          <div><label>Allowed Fares</label><input id="allowedFares" placeholder="999,1199,1499,1799" /></div>
-          <div><label>Active Fare</label><select id="activeFare"></select></div>
-        </div>
-        <div style="margin-top:12px; display:flex; gap:8px;">
-          <label style="align-self:center;"><input type="checkbox" id="enabled" /> Enable Override</label>
-          <button class="btn" id="savePricing">Save Pricing</button>
-          <button class="btn secondary" id="loadBtn">Load Pricing</button>
+        <div class="actions" style="margin-top:12px;">
+          <button class="btn" id="loadBtn">Load Pricing</button>
           <button class="btn secondary" id="listAllBtn">List All</button>
           <span class="muted" id="routeMsg"></span>
         </div>
-        <table style="margin-top:12px;" id="listTable"><thead><tr><th>Origin</th><th>Destination</th><th>Active Fare</th><th>Enabled</th><th>Allowed</th><th>Updated</th></tr></thead><tbody></tbody></table>
-      </section>
+      </div>
 
-      <section id="view-offers" class="panel hidden">
-        <h2>Offers</h2>
+      <div class="card">
+        <h2>Pricing Controls</h2>
         <div class="row">
-          <div><label>Code</label><input id="o-code" placeholder="NEWUSER50" /></div>
-          <div><label>Type</label><select id="o-type"><option value="percent">Percent</option><option value="amount">Amount</option></select></div>
+          <div>
+            <label>Allowed Fares (comma separated)</label>
+            <input id="allowedFares" placeholder="999,1199,1399,1499,1799,1999,2100,2450" />
+          </div>
+          <div>
+            <label>Active Fare (must be in allowed)</label>
+            <select id="activeFare"></select>
+          </div>
         </div>
-        <div class="row">
-          <div><label>Amount</label><input id="o-amount" type="number" placeholder="10" /></div>
-          <div><label>Active</label><select id="o-active"><option value="true" selected>Yes</option><option value="false">No</option></select></div>
+        <div class="row" style="margin-top:12px;">
+          <div>
+            <label><input type="checkbox" id="enabled" /> Enable Admin Override</label>
+          </div>
+          <div class="actions" style="justify-content:end;">
+            <button class="btn" id="savePricing">Save Pricing</button>
+          </div>
         </div>
-        <div class="row">
-          <div><label>Valid From (ISO)</label><input id="o-from" placeholder="2025-11-10T00:00:00Z" /></div>
-          <div><label>Valid Until (ISO)</label><input id="o-to" placeholder="2025-12-01T00:00:00Z" /></div>
-        </div>
-        <div style="margin-top:12px; display:flex; gap:8px; align-items:center;">
-          <button class="btn" id="o-create">Create</button>
-          <button class="btn secondary" id="o-load">List</button>
-          <button class="btn secondary" id="o-export">Export CSV</button>
-          <label class="muted">Import</label>
-          <input id="o-import-file" type="file" accept=".csv" />
-          <button class="btn secondary" id="o-import">Upload</button>
-          <span class="muted" id="o-msg"></span>
-        </div>
-        <table style="margin-top:12px;" id="o-table"><thead><tr><th>ID</th><th>Code</th><th>Type</th><th>Amount</th><th>Active</th><th></th></tr></thead><tbody></tbody></table>
-      </section>
+        <div class="muted" id="saveMsg" style="margin-top:8px;"></div>
+      </div>
 
-      <section id="view-pages" class="panel hidden">
-        <h2>Pages</h2>
-        <div class="row">
-          <div><label>Slug</label><input id="pg-slug" placeholder="about" /></div>
-          <div><label>Title</label><input id="pg-title" placeholder="About Us" /></div>
-        </div>
-        <div class="row">
-          <div><label>Meta Title</label><input id="pg-meta-title" /></div>
-          <div><label>Meta Description</label><input id="pg-meta-desc" /></div>
-        </div>
-        <label>Content (HTML)</label>
-        <textarea id="pg-html" rows="6" placeholder="<p>About content...</p>"></textarea>
-        <div class="row">
-          <div><label>Published</label><select id="pg-published"><option value="true">Yes</option><option value="false" selected>No</option></select></div>
-          <div><label>Publish At (ISO)</label><input id="pg-publish-at" placeholder="2025-11-10T09:00:00+05:30" /></div>
-        </div>
-        <div style="margin-top:12px; display:flex; gap:8px;">
-          <button class="btn" id="pg-create">Create/Update</button>
-          <button class="btn secondary" id="pg-load">List</button>
-          <span class="muted" id="pg-msg"></span>
-        </div>
-        <table style="margin-top:12px;" id="pg-table"><thead><tr><th>ID</th><th>Slug</th><th>Title</th><th>Published</th><th>Published At</th><th></th></tr></thead><tbody></tbody></table>
-      </section>
+      <div class="card">
+        <h2>Existing Admin Pricings</h2>
+        <table id="listTable">
+          <thead>
+            <tr>
+              <th>Origin</th>
+              <th>Destination</th>
+              <th>Active Fare</th>
+              <th>Enabled</th>
+              <th>Allowed</th>
+              <th>Updated</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
 
-      <section id="view-hero" class="panel hidden">
-        <h2>Hero Banners</h2>
-        <div class="row">
-          <div><label>Title</label><input id="hr-title" placeholder="Your journey starts here" /></div>
-          <div><label>Subtitle</label><input id="hr-subtitle" placeholder="Safe, comfortable, on time" /></div>
-        </div>
-        <div class="row">
-          <div><label>CTA Text</label><input id="hr-cta-text" placeholder="Book Now" /></div>
-          <div><label>CTA Href</label><input id="hr-cta-href" placeholder="/booking" /></div>
-        </div>
-        <div class="row">
-          <div><label>Background URL</label><input id="hr-bg" placeholder="https://.../hero.jpg" /></div>
-          <div><label>Active</label><select id="hr-active"><option value="true">Yes</option><option value="false" selected>No</option></select></div>
-        </div>
-        <div class="row">
-          <div><label>Start At</label><input id="hr-start" placeholder="2025-11-10T00:00:00Z" /></div>
-          <div><label>End At</label><input id="hr-end" placeholder="2025-12-01T00:00:00Z" /></div>
-        </div>
-        <div style="margin-top:12px; display:flex; gap:8px;">
-          <button class="btn" id="hr-save">Save</button>
-          <button class="btn secondary" id="hr-load">List</button>
-          <span class="muted" id="hr-msg"></span>
-        </div>
-        <table style="margin-top:12px;" id="hr-table"><thead><tr><th>ID</th><th>Title</th><th>Active</th><th>Start</th><th>End</th><th></th></tr></thead><tbody></tbody></table>
-      </section>
-
-      <section id="view-site" class="panel hidden">
-        <h2>Site Settings</h2>
-        <div class="row">
-          <div><label>SEO Title</label><input id="site-seo-title" /></div>
-          <div><label>SEO Description</label><input id="site-seo-desc" /></div>
-        </div>
-        <div class="row">
-          <div><label>Phone</label><input id="site-phone" /></div>
-          <div><label>Email</label><input id="site-email" /></div>
-        </div>
-        <div class="row">
-          <div><label>WhatsApp</label><input id="site-whatsapp" /></div>
-          <div><label>OG Image URL</label><input id="site-og" /></div>
-        </div>
-        <label>Footer HTML</label>
-        <textarea id="site-footer" rows="4"></textarea>
-        <div style="margin-top:12px; display:flex; gap:8px;">
-          <button class="btn" id="site-save">Save</button>
-          <button class="btn secondary" id="site-load">Load</button>
-          <span class="muted" id="site-msg"></span>
-        </div>
-      </section>
-      <section id="view-site" class="panel hidden">
-        <h2>Site Settings</h2>
-        <div class="row">
-          <div><label>SEO Title</label><input id="site-seo-title" /></div>
-          <div><label>SEO Description</label><input id="site-seo-desc" /></div>
-        </div>
-        <div class="row">
-          <div><label>Phone</label><input id="site-phone" /></div>
-          <div><label>Email</label><input id="site-email" /></div>
-        </div>
-        <div class="row">
-          <div><label>WhatsApp</label><input id="site-whatsapp" /></div>
-          <div><label>OG Image URL</label><input id="site-og" /></div>
-        </div>
-        <label>Footer HTML</label>
-        <textarea id="site-footer" rows="4"></textarea>
-        <div style="margin-top:12px; display:flex; gap:8px;">
-          <button class="btn" id="site-save">Save</button>
-          <button class="btn secondary" id="site-load">Load</button>
-          <span class="muted" id="site-msg"></span>
-        </div>
-      </section>
-    </main>
-
-    <script src="./admin-dashboard.js?v=3" defer></script>
+    <script src="./admin.js"></script>
   </body>
 </html>
