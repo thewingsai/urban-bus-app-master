@@ -1,21 +1,12 @@
 <?php
 // Admin pricing management endpoint
-// Requires header: X-Admin-Token: {ADMIN_TOKEN}
+// Requires admin auth via admin_auth.php (cookie, header X-Admin-Token, or query admin_token)
 // 
 // GET  /api/admin-pricing.php?origin=Kalpa&destination=Delhi
 // POST /api/admin-pricing.php  { origin, destination, allowed_fares: number[], active_fare?, is_enabled? }
 // PATCH /api/admin-pricing.php { origin, destination, active_fare?, is_enabled?, allowed_fares? }
 
-require_once __DIR__ . '/supabase_client.php';
-
-function require_admin() {
-  $provided = $_SERVER['HTTP_X_ADMIN_TOKEN'] ?? '';
-  $expected = getenv('ADMIN_TOKEN') ?: '';
-  if ($expected === '' || $provided === '' || !hash_equals($expected, $provided)) {
-    json_out([ 'success' => false, 'error' => 'Unauthorized' ], 401);
-    exit;
-  }
-}
+require_once __DIR__ . '/admin_auth.php';
 
 function get_route_id($origin, $destination) {
   $q = http_build_query([
@@ -41,9 +32,12 @@ if ($method === 'GET') {
 
   if ($origin === null || $destination === null || $origin === '' || $destination === '') {
     // List all admin pricing entries with route info
-    $q = http_build_query([
+    $params = [
       'select' => 'route_id,allowed_fares,active_fare,is_enabled,updated_at,updated_by,routes:routes(id,origin,destination)'
-    ]);
+    ];
+    if (($lim=$_GET['limit']??'')!=='') $params['limit']=(int)$lim;
+    if (($off=$_GET['offset']??'')!=='') $params['offset']=(int)$off;
+    $q = http_build_query($params);
     $resp = supabase_request('GET', '/route_admin_pricing?' . $q, null, [ 'Accept-Profile: public', 'Content-Profile: public' ]);
     $rows = [];
     if ($resp['status'] >= 200 && $resp['status'] < 300) { $rows = json_decode($resp['body'], true); }

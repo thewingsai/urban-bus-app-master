@@ -1,0 +1,216 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>UrbanBus Website Admin</title>
+    <link rel="shortcut icon" href="/favicon.svg" type="image/svg+xml" />
+    <style>
+      :root{ --brand:#1d4ed8; --bg:#0b1020; --panel:#111827; --fg:#e5e7eb; --muted:#94a3b8; --border:#374151 }
+      *{ box-sizing:border-box; font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial }
+      body{ margin:0; background:var(--bg); color:var(--fg) }
+      .top{ display:flex; align-items:center; gap:12px; padding:10px 14px; border-bottom:1px solid rgba(255,255,255,.08); position:sticky; top:0; background:#0b1020cc; backdrop-filter: blur(6px); }
+      .top img{ height:22px }
+      .wrap{ max-width:1100px; margin:0 auto; padding:16px }
+      .card{ background:var(--panel); border:1px solid var(--border); border-radius:10px; padding:14px; margin:10px 0 }
+      input,select,textarea,button{ padding:10px 12px; border-radius:8px; border:1px solid var(--border); background:#0f172a; color:var(--fg) }
+      textarea{ width:100%; resize:vertical }
+      button.brand{ background:var(--brand); border-color:var(--brand) }
+      table{ width:100%; border-collapse:collapse }
+      th,td{ border-bottom:1px solid var(--border); text-align:left; padding:8px 6px; font-size:14px }
+      .grid{ display:grid; grid-template-columns:1fr 1fr; gap:12px }
+      .muted{ color:var(--muted); font-size:12px }
+      .tabs{ display:flex; gap:8px; flex-wrap:wrap; margin-bottom:8px }
+      .tabs button{ background:#0f172a }
+      .tabs button.active{ background:var(--brand); border-color:var(--brand) }
+      .hidden{ display:none }
+    </style>
+  </head>
+  <body>
+    <div class="top"><a href="/"><img src="/logo-horizontal.svg" alt="UrbanBus"/></a><div class="muted">Website Admin</div></div>
+    <div class="wrap">
+      <div class="card">
+        <div class="grid">
+          <input id="email" placeholder="Admin username (default: admin)" />
+          <input id="password" placeholder="Password or ADMIN_TOKEN" type="password" />
+        </div>
+        <div style="margin-top:10px; display:flex; gap:8px; align-items:center; flex-wrap:wrap">
+          <button id="login" class="brand">Login</button>
+          <span id="status" class="muted">Logged out</span>
+          <span class="muted" style="margin-left:auto">Or paste ADMIN_TOKEN:</span>
+          <input id="admin-token-input" placeholder="ADMIN_TOKEN" style="max-width:260px" />
+          <button id="saveToken">Save</button>
+        </div>
+      </div>
+
+      <div class="tabs">
+        <button class="tab active" data-view="site">Site</button>
+        <button class="tab" data-view="hero">Hero</button>
+        <button class="tab" data-view="pages">Pages</button>
+        <button class="tab" data-view="offers">Offers</button>
+        <button class="tab" data-view="routes">Routes</button>
+        <button class="tab" data-view="schedules">Schedules</button>
+        <button class="tab" data-view="payments">Payments</button>
+      </div>
+
+      <section id="view-site" class="card">
+        <h3>Site Settings</h3>
+        <div class="grid">
+          <div><div class="muted">SEO Title</div><input id="site-seo-title" /></div>
+          <div><div class="muted">SEO Description</div><input id="site-seo-desc" /></div>
+        </div>
+        <div class="grid" style="margin-top:8px">
+          <div><div class="muted">Phone</div><input id="site-phone" /></div>
+          <div><div class="muted">Email</div><input id="site-email" /></div>
+        </div>
+        <div class="grid" style="margin-top:8px">
+          <div><div class="muted">WhatsApp</div><input id="site-whatsapp" /></div>
+          <div><div class="muted">OG Image URL</div><input id="site-og" /></div>
+        </div>
+        <div class="muted" style="margin-top:8px">Footer HTML</div>
+        <textarea id="site-footer" rows="5"></textarea>
+        <div style="margin-top:10px; display:flex; gap:8px; align-items:center">
+          <button id="site-save" class="brand">Save</button>
+          <button id="site-load">Load</button>
+          <span class="muted" id="site-msg"></span>
+        </div>
+      </section>
+
+      <section id="view-hero" class="card hidden">
+        <h3>Hero Banners</h3>
+        <div class="grid">
+          <div><div class="muted">Title</div><input id="hr-title" placeholder="Your journey starts here" /></div>
+          <div><div class="muted">Subtitle</div><input id="hr-subtitle" placeholder="Safe, comfortable, on time" /></div>
+        </div>
+        <div class="grid" style="margin-top:8px">
+          <div><div class="muted">CTA Text</div><input id="hr-cta-text" placeholder="Book Now" /></div>
+          <div><div class="muted">CTA Href</div><input id="hr-cta-href" placeholder="/" /></div>
+        </div>
+        <div class="grid" style="margin-top:8px">
+          <div><div class="muted">Background URL</div><input id="hr-bg" placeholder="https://.../hero.jpg" /></div>
+          <div><div class="muted">Active</div><select id="hr-active"><option value="true">Yes</option><option value="false">No</option></select></div>
+        </div>
+        <div class="grid" style="margin-top:8px">
+          <div><div class="muted">Start At</div><input id="hr-start" placeholder="2025-11-10T00:00:00Z" /></div>
+          <div><div class="muted">End At</div><input id="hr-end" placeholder="2025-12-01T00:00:00Z" /></div>
+        </div>
+        <div style="margin-top:10px; display:flex; gap:8px; align-items:center">
+          <button id="hr-save" class="brand">Save</button>
+          <button id="hr-list">List</button>
+          <span class="muted" id="hr-msg"></span>
+        </div>
+        <table id="hr-table"><thead><tr><th>ID</th><th>Title</th><th>Active</th><th>Start</th><th>End</th></tr></thead><tbody></tbody></table>
+      </section>
+
+      <section id="view-pages" class="card hidden">
+        <h3>Pages</h3>
+        <div class="grid">
+          <div><div class="muted">Slug</div><input id="pg-slug" placeholder="about" /></div>
+          <div><div class="muted">Title</div><input id="pg-title" placeholder="About Us" /></div>
+        </div>
+        <div class="grid" style="margin-top:8px">
+          <div><div class="muted">Meta Title</div><input id="pg-meta-title" /></div>
+          <div><div class="muted">Meta Description</div><input id="pg-meta-desc" /></div>
+        </div>
+        <div class="muted" style="margin-top:8px">Content (HTML)</div>
+        <textarea id="pg-html" rows="8" placeholder="<p>About content...</p>"></textarea>
+        <div class="grid" style="margin-top:8px">
+          <div><div class="muted">Published</div><select id="pg-published"><option value="true">Yes</option><option value="false" selected>No</option></select></div>
+          <div><div class="muted">Publish At (ISO)</div><input id="pg-publish-at" placeholder="2025-11-10T09:00:00+05:30" /></div>
+        </div>
+        <div style="margin-top:10px; display:flex; gap:8px; align-items:center">
+          <button id="pg-save" class="brand">Save</button>
+          <button id="pg-list">List</button>
+          <span class="muted" id="pg-msg"></span>
+        </div>
+        <table id="pg-table"><thead><tr><th>ID</th><th>Slug</th><th>Title</th><th>Published</th><th>Published At</th></tr></thead><tbody></tbody></table>
+      </section>
+
+      <section id="view-offers" class="card hidden">
+        <h3>Offers</h3>
+        <div class="grid">
+          <div><div class="muted">Code</div><input id="o-code" placeholder="NEWUSER50" /></div>
+          <div><div class="muted">Type</div><select id="o-type"><option value="percent">Percent</option><option value="amount">Amount</option></select></div>
+        </div>
+        <div class="grid" style="margin-top:8px">
+          <div><div class="muted">Amount</div><input id="o-amount" type="number" placeholder="10" /></div>
+          <div><div class="muted">Active</div><select id="o-active"><option value="true">Yes</option><option value="false">No</option></select></div>
+        </div>
+        <div class="grid" style="margin-top:8px">
+          <div><div class="muted">Valid From (ISO)</div><input id="o-from" placeholder="2025-11-10T00:00:00Z" /></div>
+          <div><div class="muted">Valid Until (ISO)</div><input id="o-to" placeholder="2025-12-01T00:00:00Z" /></div>
+        </div>
+        <div style="margin-top:10px; display:flex; gap:8px; align-items:center">
+          <button id="o-save" class="brand">Create</button>
+          <button id="o-list">List</button>
+          <span class="muted" id="o-msg"></span>
+        </div>
+        <table id="o-table"><thead><tr><th>ID</th><th>Code</th><th>Type</th><th>Amount</th><th>Active</th><th></th></tr></thead><tbody></tbody></table>
+      </section>
+
+      <section id="view-routes" class="card hidden">
+        <h3>Routes</h3>
+        <div class="grid">
+          <div><div class="muted">Origin</div><input id="r-origin" placeholder="e.g. Kalpa" /></div>
+          <div><div class="muted">Destination</div><input id="r-destination" placeholder="e.g. Delhi" /></div>
+        </div>
+        <div class="grid" style="margin-top:8px">
+          <div><div class="muted">Distance (km)</div><input id="r-distance" type="number" placeholder="0" /></div>
+          <div><div class="muted">Duration (hours)</div><input id="r-duration" type="number" placeholder="0" /></div>
+        </div>
+        <div style="margin-top:10px; display:flex; gap:8px; align-items:center">
+          <button id="r-create" class="brand">Create</button>
+          <button id="r-load">List</button>
+          <span class="muted" id="r-msg"></span>
+        </div>
+        <table id="r-table"><thead><tr><th>ID</th><th>Origin</th><th>Destination</th><th>Distance</th><th>Duration</th><th></th></tr></thead><tbody></tbody></table>
+      </section>
+
+      <section id="view-schedules" class="card hidden">
+        <h3>Schedules</h3>
+        <div class="grid">
+          <div>
+            <div class="muted">Route (type to search)</div>
+            <input id="s-route-search" list="routes-datalist" placeholder="e.g. Kalpa → Delhi" />
+            <datalist id="routes-datalist"></datalist>
+            <input id="s-route" placeholder="route uuid" style="display:none;" />
+          </div>
+          <div>
+            <div class="muted">Bus (type to search)</div>
+            <input id="s-bus-search" list="buses-datalist" placeholder="e.g. AC Sleeper (40)" />
+            <datalist id="buses-datalist"></datalist>
+            <input id="s-bus" placeholder="bus uuid" style="display:none;" />
+          </div>
+        </div>
+        <div class="grid" style="margin-top:8px">
+          <div><div class="muted">Departure</div><input id="s-dep" type="datetime-local" /></div>
+          <div><div class="muted">Arrival</div><input id="s-arr" type="datetime-local" /></div>
+        </div>
+        <div class="grid" style="margin-top:8px">
+          <div><div class="muted">Base Price</div><input id="s-price" type="number" placeholder="1499" /></div>
+          <div><div class="muted">Active</div><select id="s-active"><option value="true">Yes</option><option value="false">No</option></select></div>
+        </div>
+        <div style="margin-top:10px; display:flex; gap:8px; align-items:center">
+          <button id="s-create" class="brand">Create</button>
+          <button id="s-load">List</button>
+          <span class="muted" id="s-msg"></span>
+        </div>
+        <table id="s-table"><thead><tr><th>ID</th><th>Route</th><th>Bus</th><th>Departure</th><th>Arrival</th><th>Price</th><th>Active</th><th></th></tr></thead><tbody></tbody></table>
+      </section>
+
+      <section id="view-payments" class="card hidden">
+        <h3>Payments</h3>
+        <div class="grid">
+          <div><div class="muted">Status</div><input id="pm-status" placeholder="success|pending|failed" /></div>
+          <div><div class="muted">Transaction ID</div><input id="pm-tx" placeholder="tx_..." /></div>
+        </div>
+        <div style="margin-top:10px; display:flex; gap:8px; align-items:center">
+          <button id="pm-load">Search</button>
+        </div>
+        <table id="pm-table"><thead><tr><th>ID</th><th>Booking</th><th>Amount</th><th>Method</th><th>Tx</th><th>Status</th><th>At</th></tr></thead><tbody></tbody></table>
+      </section>
+    </div>
+
+    <script type="module" src="./website-admin.js"></script>
+  </body>
+</html>

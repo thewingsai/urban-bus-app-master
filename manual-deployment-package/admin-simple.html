@@ -1,0 +1,227 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>UrbanBus Admin (Simple)</title>
+    <link rel="shortcut icon" href="./favicon.svg" type="image/svg+xml" />
+    <style>
+      :root{ --brand:#1d4ed8; --bg:#0b1020; --panel:#0f172a; --fg:#e5e7eb; --muted:#94a3b8; --border:#1f2937 }
+      *{ box-sizing:border-box; font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial }
+      body{ margin:0; background:var(--bg); color:var(--fg); display:flex; min-height:100vh }
+      aside{ width:260px; padding:16px; border-right:1px solid rgba(255,255,255,.08); position:sticky; top:0; height:100vh }
+      .logo{ display:flex; align-items:center; gap:10px; margin-bottom:12px }
+      .logo img{ height:22px }
+      .panel{ background:var(--panel); border:1px solid var(--border); border-radius:10px; padding:12px; margin-bottom:12px }
+      input,select,textarea,button{ width:100%; padding:10px 12px; border-radius:8px; border:1px solid var(--border); background:#0b1323; color:var(--fg) }
+      textarea{ resize:vertical }
+      button.brand{ background:var(--brand); border-color:var(--brand) }
+      .muted{ color:var(--muted); font-size:12px }
+      nav{ display:flex; flex-direction:column; gap:8px }
+      nav button{ text-align:left }
+      nav button.active{ background:var(--brand); border-color:var(--brand) }
+      main{ flex:1; padding:16px }
+      section.card{ background:var(--panel); border:1px solid var(--border); border-radius:12px; padding:16px; margin-bottom:16px }
+      h2{ margin:0 0 10px 0; font-size:18px }
+      table{ width:100%; border-collapse:collapse; margin-top:10px }
+      th,td{ text-align:left; padding:8px 6px; border-bottom:1px solid var(--border); font-size:13px }
+      .row{ display:grid; grid-template-columns:1fr 1fr; gap:10px }
+      .actions{ display:flex; gap:8px; align-items:center; flex-wrap:wrap }
+      .hidden{ display:none }
+    </style>
+  </head>
+  <body>
+    <aside>
+      <div class="logo"><a href="/" target="_blank"><img src="/logo-horizontal.svg" alt="UrbanBus"/></a><strong>Admin</strong></div>
+      <div class="panel">
+        <div class="muted" style="margin-bottom:6px">Login</div>
+        <input id="login-username" placeholder="Email" />
+        <input id="login-password" type="password" placeholder="Password" style="margin-top:6px" />
+        <div class="actions" style="margin-top:8px">
+          <button id="loginBtn" class="brand">Login</button>
+          <span id="loginStatus" class="muted">Logged out</span>
+        </div>
+        <div class="muted" style="margin-top:10px">Or paste ADMIN_TOKEN</div>
+        <div class="actions" style="margin-top:6px">
+          <input id="admin-token-input" placeholder="ADMIN_TOKEN" />
+          <button id="saveToken">Save</button>
+        </div>
+      </div>
+      <nav class="panel">
+        <button data-view="dashboard" class="active">Dashboard</button>
+        <button data-view="pages">Pages</button>
+        <button data-view="routes">Routes</button>
+        <button data-view="schedules">Schedules</button>
+        <button data-view="hero">Hero</button>
+        <button data-view="site">Site</button>
+        <button data-view="offers">Offers</button>
+      </nav>
+      <div class="muted" style="font-size:11px">Tip: Ctrl+S saves the active view</div>
+    </aside>
+    <main>
+      <section id="view-dashboard" class="card">
+        <h2>Dashboard</h2>
+        <div class="row">
+          <div class="panel"><div class="muted">Revenue</div><div id="kpi-revenue" style="font-size:22px">—</div></div>
+          <div class="panel"><div class="muted">Bookings</div><div id="kpi-bookings" style="font-size:22px">—</div></div>
+        </div>
+        <div class="row" style="margin-top:10px">
+          <div class="panel"><div class="muted">Routes</div><div id="kpi-routes" style="font-size:22px">—</div></div>
+          <div class="panel"><div class="muted">Buses</div><div id="kpi-buses" style="font-size:22px">—</div></div>
+        </div>
+        <div class="row" style="margin-top:10px">
+          <div class="panel"><div class="muted">Schedules</div><div id="kpi-schedules" style="font-size:22px">—</div></div>
+          <div class="panel"><div class="muted">Offers</div><div id="kpi-offers" style="font-size:22px">—</div></div>
+        </div>
+        <div class="actions" style="margin-top:10px"><button id="kpi-refresh">Refresh</button></div>
+      </section>
+
+      <section id="view-pages" class="card hidden">
+        <h2>Pages</h2>
+        <div class="row">
+          <div><div class="muted">Slug</div><input id="pg-slug" placeholder="about" /></div>
+          <div><div class="muted">Title</div><input id="pg-title" placeholder="About Us" /></div>
+        </div>
+        <div class="row" style="margin-top:8px">
+          <div><div class="muted">Meta Title</div><input id="pg-meta-title" /></div>
+          <div><div class="muted">Meta Description</div><input id="pg-meta-desc" /></div>
+        </div>
+        <div class="muted" style="margin-top:8px">Content (HTML)</div>
+        <textarea id="pg-html" rows="8" placeholder="<p>About content...</p>"></textarea>
+        <div class="row" style="margin-top:8px">
+          <div><div class="muted">Published</div><select id="pg-published"><option value="true">Yes</option><option value="false" selected>No</option></select></div>
+          <div><div class="muted">Publish At (ISO)</div><input id="pg-publish-at" placeholder="2025-11-10T09:00:00+05:30" /></div>
+        </div>
+        <div class="actions" style="margin-top:10px">
+          <button id="pg-save" class="brand">Save</button>
+          <button id="pg-list">List</button>
+          <span class="muted" id="pg-msg"></span>
+        </div>
+        <table id="pg-table"><thead><tr><th>ID</th><th>Slug</th><th>Title</th><th>Published</th><th>Published At</th></tr></thead><tbody></tbody></table>
+      </section>
+
+      <section id="view-hero" class="card hidden">
+        <h2>Hero</h2>
+        <div class="row">
+          <div><div class="muted">Title</div><input id="hr-title" placeholder="Your journey starts here" /></div>
+          <div><div class="muted">Subtitle</div><input id="hr-subtitle" placeholder="Safe, comfortable, on time" /></div>
+        </div>
+        <div class="row" style="margin-top:8px">
+          <div><div class="muted">CTA Text</div><input id="hr-cta-text" placeholder="Book Now" /></div>
+          <div><div class="muted">CTA Href</div><input id="hr-cta-href" placeholder="/booking" /></div>
+        </div>
+        <div class="row" style="margin-top:8px">
+          <div><div class="muted">Background URL</div><input id="hr-bg" placeholder="https://.../hero.jpg" /></div>
+          <div><div class="muted">Active</div><select id="hr-active"><option value="true">Yes</option><option value="false">No</option></select></div>
+        </div>
+        <div class="row" style="margin-top:8px">
+          <div><div class="muted">Start At</div><input id="hr-start" placeholder="2025-11-10T00:00:00Z" /></div>
+          <div><div class="muted">End At</div><input id="hr-end" placeholder="2025-12-01T00:00:00Z" /></div>
+        </div>
+        <div class="actions" style="margin-top:10px">
+          <button id="hr-save" class="brand">Save</button>
+          <button id="hr-list">List</button>
+          <span class="muted" id="hr-msg"></span>
+        </div>
+        <table id="hr-table"><thead><tr><th>ID</th><th>Title</th><th>Active</th><th>Start</th><th>End</th></tr></thead><tbody></tbody></table>
+      </section>
+
+      <section id="view-site" class="card hidden">
+        <h2>Site Settings</h2>
+        <div class="row">
+          <div><div class="muted">SEO Title</div><input id="site-seo-title" /></div>
+          <div><div class="muted">SEO Description</div><input id="site-seo-desc" /></div>
+        </div>
+        <div class="row" style="margin-top:8px">
+          <div><div class="muted">Phone</div><input id="site-phone" /></div>
+          <div><div class="muted">Email</div><input id="site-email" /></div>
+        </div>
+        <div class="row" style="margin-top:8px">
+          <div><div class="muted">WhatsApp</div><input id="site-whatsapp" /></div>
+          <div><div class="muted">OG Image URL</div><input id="site-og" /></div>
+        </div>
+        <div class="muted" style="margin-top:8px">Footer HTML</div>
+        <textarea id="site-footer" rows="5"></textarea>
+        <div class="actions" style="margin-top:10px">
+          <button id="site-save" class="brand">Save</button>
+          <button id="site-load">Load</button>
+          <span class="muted" id="site-msg"></span>
+        </div>
+      </section>
+
+      <section id="view-offers" class="card hidden">
+        <h2>Offers</h2>
+        <div class="row">
+          <div><div class="muted">Code</div><input id="o-code" placeholder="NEWUSER50" /></div>
+          <div><div class="muted">Type</div><select id="o-type"><option value="percent">Percent</option><option value="amount">Amount</option></select></div>
+        </div>
+        <div class="row" style="margin-top:8px">
+          <div><div class="muted">Amount</div><input id="o-amount" type="number" placeholder="10" /></div>
+          <div><div class="muted">Active</div><select id="o-active"><option value="true">Yes</option><option value="false">No</option></select></div>
+        </div>
+        <div class="row" style="margin-top:8px">
+          <div><div class="muted">Valid From (ISO)</div><input id="o-from" placeholder="2025-11-10T00:00:00Z" /></div>
+          <div><div class="muted">Valid Until (ISO)</div><input id="o-to" placeholder="2025-12-01T00:00:00Z" /></div>
+        </div>
+        <div class="actions" style="margin-top:10px">
+          <button id="o-save" class="brand">Create</button>
+          <button id="o-list">List</button>
+          <span class="muted" id="o-msg"></span>
+        </div>
+        <table id="o-table"><thead><tr><th>ID</th><th>Code</th><th>Type</th><th>Amount</th><th>Active</th></tr></thead><tbody></tbody></table>
+      </section>
+
+      <section id="view-routes" class="card hidden">
+        <h2>Routes</h2>
+        <div class="row">
+          <div><div class="muted">Origin</div><input id="r-origin" placeholder="e.g. Kalpa" /></div>
+          <div><div class="muted">Destination</div><input id="r-destination" placeholder="e.g. Delhi" /></div>
+        </div>
+        <div class="row" style="margin-top:8px">
+          <div><div class="muted">Distance (km)</div><input id="r-distance" type="number" placeholder="0" /></div>
+          <div><div class="muted">Duration (hours)</div><input id="r-duration" type="number" placeholder="0" /></div>
+        </div>
+        <div class="actions" style="margin-top:10px">
+          <button id="r-save" class="brand">Save</button>
+          <button id="r-list">List</button>
+          <span class="muted" id="r-msg"></span>
+        </div>
+        <table id="r-table"><thead><tr><th>ID</th><th>Origin</th><th>Destination</th><th>Distance</th><th>Duration</th><th></th></tr></thead><tbody></tbody></table>
+      </section>
+
+      <section id="view-schedules" class="card hidden">
+        <h2>Schedules</h2>
+        <div class="row">
+          <div>
+            <div class="muted">Route (type to search)</div>
+            <input id="s-route-search" list="routes-datalist" placeholder="e.g. Kalpa → Delhi" />
+            <datalist id="routes-datalist"></datalist>
+            <input id="s-route" placeholder="route uuid" style="display:none;" />
+          </div>
+          <div>
+            <div class="muted">Bus (type to search)</div>
+            <input id="s-bus-search" list="buses-datalist" placeholder="e.g. AC Sleeper (40)" />
+            <datalist id="buses-datalist"></datalist>
+            <input id="s-bus" placeholder="bus uuid" style="display:none;" />
+          </div>
+        </div>
+        <div class="row" style="margin-top:8px">
+          <div><div class="muted">Departure</div><input id="s-dep" type="datetime-local" /></div>
+          <div><div class="muted">Arrival</div><input id="s-arr" type="datetime-local" /></div>
+        </div>
+        <div class="row" style="margin-top:8px">
+          <div><div class="muted">Base Price</div><input id="s-price" type="number" placeholder="1499" /></div>
+          <div><div class="muted">Active</div><select id="s-active"><option value="true" selected>Yes</option><option value="false">No</option></select></div>
+        </div>
+        <div class="actions" style="margin-top:10px">
+          <button id="s-save" class="brand">Create</button>
+          <button id="s-list">List</button>
+          <span class="muted" id="s-msg"></span>
+        </div>
+        <table id="s-table"><thead><tr><th>ID</th><th>Route</th><th>Bus</th><th>Departure</th><th>Arrival</th><th>Price</th><th>Active</th><th></th></tr></thead><tbody></tbody></table>
+      </section>
+    </main>
+
+    <script src="./admin-simple.js" defer></script>
+  </body>
+</html>
